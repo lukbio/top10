@@ -209,7 +209,15 @@ canvas { width: 100%; height: auto; display: block; border: 1px solid var(--rule
   }
 
   async function search(q) {
-    if (state.kind === 'movie') return (await wikiSearch(q + ' film')).filter(isFilm).map(toMovie);
+    // TMDB knows far more films than Wikipedia has pages for; Wikipedia is the fallback when there's no key
+    if (state.kind === 'movie') {
+      if (!state.tmdbKey) return (await wikiSearch(q + ' film')).filter(isFilm).map(toMovie);
+      const d = await tmdb('/search/movie', { query: q });
+      return (d.results || []).slice(0, 20).map((r) => ({
+        id: 'm' + r.id, tmdb: r.id, kind: 'movie', t: r.title, y: (r.release_date || '').slice(0, 4), by: '',
+        art: r.poster_path ? 'https://image.tmdb.org/t/p/w500' + r.poster_path : '', v: 0,
+      }));
+    }
     if (state.tmdbKey) { // TMDB knows every show, with its poster
       const d = await tmdb('/search/tv', { query: q });
       return (d.results || []).slice(0, 20).map((r) => ({
@@ -651,12 +659,19 @@ canvas { width: 100%; height: auto; display: block; border: 1px solid var(--rule
   }
   async function findTmdb(p) {
     if (p.kind === 'tv') return findShow(p);
-    let res = await tmdb('/search/movie', { query: p.t, ...(p.y && { primary_release_year: p.y }) });
-    let m = res.results && res.results[0];
-    if (!m && p.y) { res = await tmdb('/search/movie', { query: p.t }); m = res.results && res.results[0]; }
-    if (!m) return { logo: '', hd: '' };
-    const im = await tmdb(`/movie/${m.id}/images`, { include_image_language: 'en,null' });
-    return { logo: bestLogo(im.logos), hd: m.poster_path ? TMDB_IMG + m.poster_path : '' };
+    let id = p.tmdb;
+    if (!id) { // picked from Wikipedia: find the same film on TMDB
+      let res = await tmdb('/search/movie', { query: p.t, ...(p.y && { primary_release_year: p.y }) });
+      if (!(res.results || []).length && p.y) res = await tmdb('/search/movie', { query: p.t });
+      id = res.results && res.results[0] && res.results[0].id;
+    }
+    if (!id) return { logo: '', hd: '' };
+    const d = await tmdb(`/movie/${id}`, { append_to_response: 'images,credits', include_image_language: 'en,null' });
+    const directors = ((d.credits && d.credits.crew) || []).filter((c) => c.job === 'Director').map((c) => c.name);
+    return {
+      tmdb: id, logo: bestLogo(d.images && d.images.logos), hd: d.poster_path ? TMDB_IMG + d.poster_path : '',
+      by: p.by || directors.slice(0, 2).join(' & '),
+    };
   }
   // a show's logo and poster, plus its network and the years it ran (e.g. 2008–2013, or 2019– if still going)
   async function findShow(p) {
@@ -700,7 +715,7 @@ canvas { width: 100%; height: auto; display: block; border: 1px solid var(--rule
     const full = L().picks.length >= MAX;
     $('#resultswrap').hidden = lastResults.length === 0;
     $('#results').innerHTML = lastResults.map((m, i) => {
-      const have = L().picks.some((p) => p.id === m.id);
+      const have = L().picks.some((p) => p.id === m.id || (m.tmdb && p.tmdb === m.tmdb) || (p.t === m.t && p.y === m.y));
       return `<tr>
         <td>${esc(m.t)}</td>
         <td class="num">${esc(m.y)}</td>
