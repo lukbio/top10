@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Top 10</title>
+<!-- fonts below are only for the pictures the page draws; the page itself uses the system font -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bebas+Neue&family=Inter:wght@400;600&family=Oswald:wght@500;700&family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #ffffff; --fg: #222222; --muted: #666666; --rule: #d4d4d4; --link: #1a5fb4;
+  --bar: #2f3b33; --bar-fg: #f2f2f2; --row-alt: #f7f7f7; --field-border: #999999; --error: #b00020;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1b1b; --fg: #dddddd; --muted: #9a9a9a; --rule: #3a3a3a; --link: #8ab4f8;
+    --bar: #101411; --bar-fg: #e6e6e6; --row-alt: #222222; --field-border: #555555; --error: #ff8a8a;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+a { color: var(--link); }
+.wrap { max-width: 860px; margin: 0 auto; padding: 0 16px; }
+.topbar { background: var(--bar); color: var(--bar-fg); }
+.topbar .wrap { display: flex; justify-content: space-between; align-items: baseline; padding-top: 10px; padding-bottom: 10px; }
+.brand { font-weight: 700; font-size: 17px; }
+.topbar nav a { color: var(--bar-fg); margin-left: 16px; font-size: 14px; }
+main { padding-bottom: 48px; }
+.intro { margin: 20px 0 16px; }
+h2 { font-size: 18px; margin: 32px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--rule); }
+label.field { display: block; font-weight: 600; margin: 12px 0 4px; }
+button, input { font: inherit; color: inherit; }
+input[type=text], input[type=search], input[type=password] {
+  width: 100%; padding: 6px 8px; border: 1px solid var(--field-border); border-radius: 2px; background: var(--bg); color: var(--fg);
+}
+.under-input { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; font-size: 13px; color: var(--muted); margin: 4px 0 8px; min-height: 1.5em; }
+.linklike { background: none; border: none; padding: 0; color: var(--link); text-decoration: underline; cursor: pointer; font-size: 13px; }
+.linklike:disabled { color: var(--muted); text-decoration: none; cursor: default; }
+.submit { min-height: 34px; padding: 4px 18px; border: 1px solid #777777; border-radius: 3px; background: linear-gradient(#fafafa, #e4e4e4); color: #111111; cursor: pointer; }
+.submit:hover:not(:disabled) { background: linear-gradient(#ffffff, #d8d8d8); }
+.submit:disabled { color: #888888; cursor: default; }
+input:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+.small { font-size: 13px; }
+.muted { color: var(--muted); }
+.table-wrap { overflow-x: auto; }
+.hits { width: 100%; border-collapse: collapse; font-size: 14px; }
+.hits th { text-align: left; font-weight: 600; padding: 4px 8px; border-bottom: 2px solid var(--rule); }
+.hits td { padding: 3px 8px; border-bottom: 1px solid var(--rule); }
+.hits tbody tr:nth-child(even) { background: var(--row-alt); }
+.hits .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; width: 1%; }
+.hits .acts { white-space: nowrap; text-align: right; width: 1%; }
+.hits .acts .linklike + .linklike { margin-left: 10px; }
+.results { max-height: 320px; overflow: auto; border-bottom: 1px solid var(--rule); }
+.mode { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 8px 0 12px; }
+.mode .group { display: flex; }
+.mode button { padding: 6px 14px; min-height: 36px; border: 1px solid var(--field-border); background: var(--bg); font-size: 14px; cursor: pointer; }
+.mode button + button { border-left: none; }
+.mode button[aria-pressed=true] { background: var(--row-alt); font-weight: 600; }
+canvas { width: 100%; height: auto; display: block; border: 1px solid var(--rule); }
+.actions { margin: 10px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.actions input { flex: 1; min-width: 200px; width: auto; }
+.error { color: var(--error); }
+.singles { display: flex; gap: 6px; overflow-x: auto; padding: 10px 0 4px; }
+.singles canvas { height: 150px; width: auto; flex: none; }
+.about p { margin: 0 0 10px; }
+@media (max-width: 560px) { .hide-narrow { display: none; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <span class="brand">Top 10</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="mode" style="margin-top:20px">
+    <div class="group" role="group" aria-label="List">
+      <button data-kind="movie">Movies</button>
+      <button data-kind="tv">TV</button>
+    </div>
+  </div>
+
+  <label class="field" for="title">Title on the picture</label>
+  <input id="title" type="text" maxlength="40">
+
+  <label class="field" for="q" id="qlabel">Add a movie</label>
+  <input id="q" type="search" placeholder="e.g. Alien" autocomplete="off">
+  <div class="under-input">
+    <span id="status" aria-live="polite"></span>
+  </div>
+  <div class="table-wrap results" id="resultswrap" hidden>
+    <table class="hits">
+      <thead><tr><th>Title</th><th class="num">Year</th><th class="hide-narrow bycol">Director</th><th></th></tr></thead>
+      <tbody id="results"></tbody>
+    </table>
+  </div>
+
+  <h2>Your list (<span id="count">0</span>/10)</h2>
+  <p class="small muted" id="pickhint">Nothing here yet. Search above to add movies.</p>
+  <div class="table-wrap" id="pickswrap">
+    <table class="hits">
+      <thead><tr><th class="num">#</th><th>Title</th><th class="num">Year</th><th class="hide-narrow bycol">Director</th><th></th></tr></thead>
+      <tbody id="picks"></tbody>
+    </table>
+  </div>
+  <div class="under-input"><span id="logostatus" class="error" aria-live="polite"></span><button type="button" class="linklike" id="clear">clear list</button></div>
+
+  <h2>Picture</h2>
+  <div class="mode">
+    <div class="group" role="group" aria-label="View">
+      <button data-view="spines">Spines</button>
+      <button data-view="tapes">Tapes</button>
+      <button data-view="covers">Covers</button>
+    </div>
+  </div>
+  <canvas id="cv" width="1600" height="1000"></canvas>
+  <div class="actions"><button type="button" class="submit" id="download">Download PNG</button></div>
+
+  <h2>Post to X</h2>
+  <label class="field" for="caption">Caption</label>
+  <div class="actions" style="margin-top:0">
+    <input id="caption" type="text" maxlength="280" placeholder="optional">
+    <button type="button" class="submit" id="post">Post to X</button>
+  </div>
+  <p class="small muted" id="poststatus"></p>
+  <div class="singles" id="singles" aria-label="The pictures that will be posted"></div>
+
+  <p class="small muted" style="margin-top:40px">Posters and details from <a href="https://www.wikipedia.org/">Wikipedia</a> and
+    <a href="https://www.themoviedb.org/">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+</main>
+
+<!-- your own settings (the TMDB key); the page works without this file -->
+<script src="config.js"></script>
+<script>
+(() => {
+  const MAX = 10;
+  const KEY = 'top10movies.v1';
+  // wording that changes between the movie list and the TV list
+  const KINDS = {
+    movie: { add: 'Add a movie', eg: 'e.g. Alien', by: 'Director', hint: 'Nothing here yet. Search above to add movies.',
+      none: 'No movies found. Try adding the year.', one: 'film', many: 'films', file: 'movies', title: 'My Top 10 Movies', caption: 'My top 10 movies' },
+    tv: { add: 'Add a show', eg: 'e.g. Breaking Bad', by: 'Network', hint: 'Nothing here yet. Search above to add shows.',
+      none: 'No shows found. Try another spelling.', one: 'show', many: 'shows', file: 'shows', title: 'My Top 10 Shows', caption: 'My top 10 shows' },
+  };
+  const newList = (k) => ({ title: KINDS[k].title, caption: KINDS[k].caption, picks: [] });
+  const state = { kind: 'movie', view: 'spines', backdrop: 'dark', tmdbKey: '', useLogos: true, lists: { movie: newList('movie'), tv: newList('tv') } };
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) {}
+  // lists saved before TV was added kept the movie list at the top level
+  if (!saved.lists && saved.picks) saved.lists = { movie: { title: saved.title ?? KINDS.movie.title, caption: saved.caption ?? KINDS.movie.caption, picks: saved.picks } };
+  ['title', 'caption', 'picks'].forEach((k) => delete saved[k]);
+  Object.assign(state, saved, { lists: { ...state.lists, ...(saved.lists || {}) } });
+  if (!KINDS[state.kind]) state.kind = 'movie';
+  const L = () => state.lists[state.kind], K = () => KINDS[state.kind];
+  delete state.spineStyle; state.backdrop = 'dark'; state.useLogos = true; // dark backdrop, title logos on
+  // a key written in config.js wins over one typed into the page
+  const CONFIG_KEY = String((window.TOP10_CONFIG && window.TOP10_CONFIG.tmdbKey) || '').trim();
+  if (CONFIG_KEY) state.tmdbKey = CONFIG_KEY;
+  const save = () => {
+    try { localStorage.setItem(KEY, JSON.stringify(CONFIG_KEY ? { ...state, tmdbKey: '' } : state)); } catch (e) {}
+  };
+
+  const $ = (s) => document.querySelector(s);
+  const cv = $('#cv');
+
+  /* ---------- Wikipedia ---------- */
+  const API = 'https://en.wikipedia.org/w/api.php';
+  const BASE = { action: 'query', format: 'json', formatversion: '2', origin: '*',
+    prop: 'pageimages|description', piprop: 'thumbnail', pithumbsize: '600', pilicense: 'any' };
+
+  function toMovie(p) {
+    const desc = p.description || '';
+    return {
+      id: p.pageid,
+      w: p.title,
+      t: p.title.replace(/\s*\([^)]*\bfilm\)$/i, ''),
+      y: (desc.match(/\b(18|19|20)\d{2}\b/) || [''])[0],
+      by: (desc.match(/\bby (.+)$/i) || [, ''])[1].replace(/^\w/, (c) => c.toUpperCase()),
+      art: p.thumbnail ? p.thumbnail.source : '',
+      v: 0,
+    };
+  }
+  const isFilm = (p) => /\b(film|movie)\b/i.test(p.description || '') && !/franchise|series|soundtrack|character|festival|award|studio|company|director|actor|actress/i.test(p.description || '');
+
+  async function wikiSearch(q) {
+    const u = new URL(API);
+    Object.entries({ ...BASE, generator: 'search', gsrsearch: q, gsrlimit: '20' }).forEach(([k, v]) => u.searchParams.set(k, v));
+    const d = await (await fetch(u)).json();
+    return ((d.query && d.query.pages) || []).sort((a, b) => a.index - b.index);
+  }
+
+  // TV shows on Wikipedia, used only when there is no TMDB key
+  const isShow = (p) => /\b(television|tv|web|animated|anime)\b.*\b(series|sitcom|show|miniseries|drama|programme|program)\b|\bsitcom\b|\bminiseries\b/i.test(p.description || '') &&
+    !/\b(season|episode|character|franchise|soundtrack|film|actor|actress|host|presenter|network|channel)\b/i.test(p.description || '');
+  function toShow(p) {
+    const desc = p.description || '', yr = desc.match(/\b((?:19|20)\d{2})(?:\s*[–-]\s*((?:19|20)\d{2}|present))?/);
+    return {
+      id: p.pageid, kind: 'tv', w: p.title,
+      t: p.title.replace(/\s*\([^)]*\b(series|miniseries|sitcom|show)\)$/i, ''),
+      y: yr ? (yr[2] ? `${yr[1]}–${yr[2] === 'present' ? '' : yr[2]}` : yr[1]) : '',
+      by: '', art: p.thumbnail ? p.thumbnail.source : '', v: 0,
+    };
+  }
+
+  async function search(q) {
+    if (state.kind === 'movie') return (await wikiSearch(q + ' film')).filter(isFilm).map(toMovie);
+    if (state.tmdbKey) { // TMDB knows every show, with its poster
+      const d = await tmdb('/search/tv', { query: q });
+      return (d.results || []).slice(0, 20).map((r) => ({
+        id: 'tv' + r.id, tmdb: r.id, kind: 'tv', t: r.name, y: (r.first_air_date || '').slice(0, 4), by: '',
+        art: r.poster_path ? 'https://image.tmdb.org/t/p/w500' + r.poster_path : '', v: 0,
+      }));
+    }
+    return (await wikiSearch(q + ' television series')).filter(isShow).map(toShow);
+  }
+  /* ---------- colour + random helpers ---------- */
+  function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function rng(seed) { return () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const lum = ([r, g, b]) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  const css = ([r, g, b], a = 1) => `rgba(${r | 0},${g | 0},${b | 0},${a})`;
+  const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+  function hsl(h, s, l) { const k = (n) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)); return [f(0) * 255, f(8) * 255, f(4) * 255]; }
+
+  const palCache = new Map();
+  function palette(img, key) {
+    if (palCache.has(key)) return palCache.get(key);
+    const r = rng(hash(key)), h = r() * 360;
+    let pal = { vivid: hsl(h, .55, .45), dark: hsl(h, .3, .12), light: hsl(h, .25, .9) };
+    if (img) {
+      try {
+        const c = document.createElement('canvas'); c.width = 24; c.height = 36;
+        const x = c.getContext('2d', { willReadFrequently: true });
+        x.drawImage(img, 0, 0, 24, 36);
+        const d = x.getImageData(0, 0, 24, 36).data, px = [];
+        for (let i = 0; i < d.length; i += 4) {
+          const p = [d[i], d[i + 1], d[i + 2]], mx = Math.max(...p), mn = Math.min(...p);
+          px.push({ p, l: lum(p), s: mx ? ((mx - mn) / mx) * (mx / 255) : 0 });
+        }
+        const avg = (a) => a.reduce((s, q) => s.map((v, i) => v + q.p[i]), [0, 0, 0]).map((v) => v / a.length);
+        const bySat = [...px].sort((a, b) => b.s - a.s), byL = [...px].sort((a, b) => a.l - b.l);
+        let vivid = avg(bySat.slice(0, Math.ceil(px.length * .12)));
+        const vl = lum(vivid);
+        if (vl > .72) vivid = mix(vivid, [0, 0, 0], .3);
+        if (vl < .1) vivid = mix(vivid, [255, 255, 255], .18);
+        pal = {
+          vivid,
+          dark: mix(avg(byL.slice(0, Math.ceil(px.length * .3))), [0, 0, 0], .4),
+          light: mix(avg(byL.slice(-Math.ceil(px.length * .2))), [250, 247, 240], .6),
+        };
+      } catch (e) { /* tainted canvas: keep the fallback colours */ }
+    }
+    palCache.set(key, pal);
+    return pal;
+  }
+
+  const imgCache = new Map();
+  function loadImg(src) {
+    if (!src) return Promise.resolve(null);
+    if (!imgCache.has(src)) imgCache.set(src, new Promise((res) => {
+      const i = new Image(); i.crossOrigin = 'anonymous';
+      i.onload = () => res(i); i.onerror = () => res(null); i.src = src;
+    }));
+    return imgCache.get(src);
+  }
+
+  /* ---------- drawing helpers ---------- */
+  function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+  function drawCover(ctx, img, x, y, w, h, fy = .35) {
+    const s = Math.max(w / img.width, h / img.height), sw = w / s, sh = h / s;
+    ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) * fy, sw, sh, x, y, w, h);
+  }
+  // fit text into a box of length maxLen (along the line) and thickness maxThick (across lines); up to 2 lines
+  function fit(ctx, text, font, maxLen, maxThick) {
+    ctx.font = font(100);
+    const one = Math.min(maxThick, (100 * maxLen) / ctx.measureText(text).width);
+    const words = text.split(' ');
+    if (words.length > 1 && one < maxThick * .55) {
+      let best = null;
+      for (let i = 1; i < words.length; i++) {
+        const a = words.slice(0, i).join(' '), b = words.slice(i).join(' ');
+        const m = Math.max(ctx.measureText(a).width, ctx.measureText(b).width);
+        if (!best || m < best.m) best = { a, b, m };
+      }
+      const two = Math.min(maxThick / 2.1, (100 * maxLen) / best.m);
+      if (two > one * 1.1) return { lines: [best.a, best.b], size: two };
+    }
+    return { lines: [text], size: one };
+  }
+  function drawLines(ctx, f, font, x, y, color) {
+    ctx.font = font(f.size); ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const gap = f.size * 1.02, start = y - ((f.lines.length - 1) * gap) / 2;
+    f.lines.forEach((l, i) => ctx.fillText(l, x, start + i * gap + f.size * .04));
+  }
+
+  const FONTS = [
+    { f: (s) => `${s}px Anton`, up: true },
+    { f: (s) => `${s * 1.12}px "Bebas Neue"`, up: true },
+    { f: (s) => `700 ${s}px Oswald`, up: true },
+    { f: (s) => `${s * .85}px "Archivo Black"`, up: false },
+  ];
+
+  const BACKDROPS = {
+    light: { wall: '#ebe6db', wall2: '#ddd6c8', ink: '#1b1a17', quiet: 'rgba(27,26,23,.55)', plank: '#b88a5c', plankEdge: '#8d6440', slot: 'rgba(27,26,23,.18)' },
+    dark: { wall: '#17140f', wall2: '#0d0b08', ink: '#f2eee5', quiet: 'rgba(242,238,229,.55)', plank: '#4a3524', plankEdge: '#2c1f14', slot: 'rgba(242,238,229,.18)' },
+  };
+
+  function background(ctx, W, H, B) {
+    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, B.wall); g.addColorStop(1, B.wall2);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+  function header(ctx, W, B, n) {
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = B.ink; ctx.font = '72px Anton';
+    ctx.fillText(L().title || K().title, 80, 128);
+    ctx.fillStyle = B.quiet; ctx.font = '600 22px Inter, sans-serif';
+    ctx.fillText(n ? `${n} favorite ${n === 1 ? K().one : K().many}` : `Add some ${K().file} to get started`, 82, 166);
+  }
+  function emptySlot(ctx, x, y, w, h, rank, B, radius = 6) {
+    ctx.save(); ctx.setLineDash([10, 8]); ctx.lineWidth = 2; ctx.strokeStyle = B.slot;
+    rr(ctx, x + 1, y + 1, w - 2, h - 2, radius); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = B.slot; ctx.font = `${Math.min(w, h) * .32}px Anton`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(rank, x + w / 2, y + h / 2);
+  }
+  function badge(ctx, cx, cy, r, rank) {
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = '#faf8f2'; ctx.fill(); ctx.restore();
+    ctx.fillStyle = '#16150f'; ctx.font = `${r * 1.05}px "Archivo Black"`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(rank, cx, cy + r * .06);
+  }
+
+  /* ---------- a VHS case spine ----------
+     the poster runs the whole spine, with the title centred on it */
+  function drawSpine(ctx, x, y, w, h, it, img, pal, logo, radius = 5) {
+    const r = rng(hash(`${it.t}|${it.y}|0`)); // each film always gets the same fallback font
+    const F = FONTS[Math.floor(r() * FONTS.length)];
+    ctx.save(); rr(ctx, x, y, w, h, radius); ctx.clip();
+
+    // poster, edge to edge
+    if (img) drawCover(ctx, img, x, y, w, h, .5);
+    else { ctx.fillStyle = css(pal.dark); ctx.fillRect(x, y, w, h); }
+    const bg = [28, 28, 28], ink = [250, 248, 242];
+
+    // the film's own title logo when we have one, otherwise the title set in a font, reading top to bottom like a US tape.
+    // A soft shadow keeps it readable on a busy poster
+    const top = y + w * .35, len = h - w * .7, mid = top + len / 2;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.7)'; ctx.shadowBlur = w * .06;
+    if (logo) drawLogo(ctx, logo, x + w / 2, mid, len * .9, w * .74, w * .8, bg, ink);
+    else {
+      const title = F.up ? it.t.toUpperCase() : it.t;
+      const f = fit(ctx, title, F.f, len * .94, w * .6);
+      ctx.translate(x + w / 2, mid); ctx.rotate(Math.PI / 2);
+      drawLines(ctx, f, F.f, 0, 0, css(ink));
+    }
+    ctx.restore();
+
+    // plastic case shading
+    const g = ctx.createLinearGradient(x, 0, x + w, 0);
+    g.addColorStop(0, 'rgba(255,255,255,.28)'); g.addColorStop(.06, 'rgba(255,255,255,.08)'); g.addColorStop(.2, 'rgba(255,255,255,.12)');
+    g.addColorStop(.3, 'rgba(255,255,255,0)'); g.addColorStop(.85, 'rgba(0,0,0,.1)'); g.addColorStop(1, 'rgba(0,0,0,.45)');
+    ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1.5; rr(ctx, x + .75, y + .75, w - 1.5, h - 1.5, radius); ctx.stroke();
+  }
+
+  /* ---------- title logos ---------- */
+  const logoLumCache = new WeakMap(), tintCache = new Map();
+  function logoLum(img) { // brightness of the logo's visible pixels, and how much it varies inside the logo
+    if (logoLumCache.has(img)) return logoLumCache.get(img);
+    let v = { mean: .5, spread: 0 };
+    try {
+      const c = document.createElement('canvas'); c.width = 96; c.height = 48;
+      const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, 96, 48);
+      const d = x.getImageData(0, 0, 96, 48).data; let s = 0, s2 = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        const a = d[i + 3] / 255, l = lum([d[i], d[i + 1], d[i + 2]]);
+        s += l * a; s2 += l * l * a; n += a;
+      }
+      if (n) { const m = s / n; v = { mean: m, spread: Math.sqrt(Math.max(0, s2 / n - m * m)) }; }
+    } catch (e) {}
+    logoLumCache.set(img, v); return v;
+  }
+  function tinted(img, ink) { // the logo's shape in one colour, for when its own colours vanish on the spine
+    const k = img.src + '|' + ink.join(',');
+    if (!tintCache.has(k)) {
+      const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+      const x = c.getContext('2d'); x.drawImage(img, 0, 0); x.globalCompositeOperation = 'source-in';
+      x.fillStyle = css(ink); x.fillRect(0, 0, c.width, c.height);
+      // drop soft glows and shadows, which would turn into a solid smear once recoloured; keep the solid letters
+      try {
+        const d = x.getImageData(0, 0, c.width, c.height), a = d.data;
+        for (let i = 3; i < a.length; i += 4) a[i] = a[i] < 170 ? 0 : Math.min(255, (a[i] - 170) * 3);
+        x.putImageData(d, 0, 0);
+      } catch (e) {}
+      tintCache.set(k, c);
+    }
+    return tintCache.get(k);
+  }
+  function drawLogo(ctx, img, cx, cy, maxLen, maxThick, maxUpright, bg, ink) {
+    const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    if (!iw || !ih) return;
+    // recolour only a plain one-colour logo that would vanish on this spine; a logo with its own
+    // light and dark parts (letters on a backing, like The Matrix) carries its own contrast
+    const L = logoLum(img);
+    const src = L.spread < .16 && Math.abs(L.mean - lum(bg)) < .35 ? tinted(img, ink) : img;
+    const sSide = Math.min(maxLen / iw, maxThick / ih), sUp = Math.min(maxUpright / iw, maxLen / ih);
+    ctx.save(); ctx.translate(cx, cy);
+    if (sSide >= sUp) { ctx.rotate(Math.PI / 2); ctx.drawImage(src, -iw * sSide / 2, -ih * sSide / 2, iw * sSide, ih * sSide); }
+    else ctx.drawImage(src, -iw * sUp / 2, -ih * sUp / 2, iw * sUp, ih * sUp); // a tall, square-ish logo reads better upright
+    ctx.restore();
+  }
+
+  /* ---------- a VHS cassette ---------- */
+  function drawTape(ctx, x, y, w, h, it, img, pal, rank) {
+    const r = rng(hash(`${it.t}|${it.y}|0|tape`));
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 8;
+    rr(ctx, x, y, w, h, w * .03); ctx.fillStyle = '#1c1c1f'; ctx.fill(); ctx.restore();
+    const bevel = ctx.createLinearGradient(0, y, 0, y + h);
+    bevel.addColorStop(0, 'rgba(255,255,255,.12)'); bevel.addColorStop(.08, 'rgba(255,255,255,.02)'); bevel.addColorStop(1, 'rgba(0,0,0,.25)');
+    rr(ctx, x, y, w, h, w * .03); ctx.fillStyle = bevel; ctx.fill();
+
+    // label
+    const lx = x + w * .06, ly = y + h * .08, lw = w * .88, lh = h * .38;
+    ctx.save(); rr(ctx, lx, ly, lw, lh, 3); ctx.clip();
+    ctx.fillStyle = '#f3efe4'; ctx.fillRect(lx, ly, lw, lh);
+    ctx.fillStyle = css(pal.vivid);
+    if (r() < .5) ctx.fillRect(lx, ly, lw, lh * .16); else ctx.fillRect(lx, ly + lh * .84, lw, lh * .16);
+    // ruled lines
+    ctx.strokeStyle = 'rgba(40,60,120,.18)'; ctx.lineWidth = 1;
+    for (let i = 1; i < 4; i++) { const ly2 = ly + lh * (.2 + i * .17); ctx.beginPath(); ctx.moveTo(lx, ly2); ctx.lineTo(lx + lw, ly2); ctx.stroke(); }
+    let tx = lx + lw * .04;
+    if (img) { const ph = lh * .62, pw = ph * .68; drawCover(ctx, img, lx + lw * .04, ly + lh * .19, pw, ph, .3); tx = lx + lw * .04 + pw + lw * .04; }
+    const marker = (s) => `${s}px "Permanent Marker"`;
+    const tw = lx + lw - tx - lw * .04, f = fit(ctx, it.t, marker, tw, lh * .5);
+    drawLines(ctx, f, marker, tx + tw / 2, ly + lh * .48, ['#1c2a5a', '#1d1d1d', '#7a1b14'][Math.floor(r() * 3)]);
+    ctx.restore();
+
+    // window + reels
+    const wx = x + w * .22, wy = y + h * .55, ww = w * .56, wh = h * .3;
+    rr(ctx, wx, wy, ww, wh, wh * .2); ctx.fillStyle = '#09090a'; ctx.fill();
+    const left = .3 + r() * .55;
+    [[wx + ww * .25, left], [wx + ww * .75, 1 - left]].forEach(([cx, amt]) => {
+      const cy = wy + wh / 2, hub = wh * .2;
+      ctx.beginPath(); ctx.arc(cx, cy, hub + (wh * .42 - hub) * amt, 0, Math.PI * 2); ctx.fillStyle = '#3b2b22'; ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy, hub, 0, Math.PI * 2); ctx.fillStyle = '#e9e6df'; ctx.fill();
+      ctx.fillStyle = '#09090a';
+      for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * hub * .62, cy + Math.sin(a) * hub * .62, hub * .16, 0, Math.PI * 2); ctx.fill(); }
+    });
+    const glass = ctx.createLinearGradient(wx, wy, wx + ww, wy + wh);
+    glass.addColorStop(0, 'rgba(255,255,255,.12)'); glass.addColorStop(.4, 'rgba(255,255,255,0)');
+    rr(ctx, wx, wy, ww, wh, wh * .2); ctx.fillStyle = glass; ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = `${h * .1}px "Archivo Black"`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(rank, x + w * .06, y + h * .7);
+    if (it.y) { ctx.textAlign = 'right'; ctx.font = `500 ${h * .08}px Oswald`; ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillText(it.y, x + w * .94, y + h * .7); }
+  }
+
+  /* ---------- scenes ---------- */
+  const SCENES = {
+    spines: {
+      W: 1600, H: 960,
+      draw(ctx, items, B) {
+        const n = MAX, gap = 16, w = 98, h = 680, total = n * w + (n - 1) * gap;
+        const x0 = (1600 - total) / 2, y0 = 200;
+        for (let i = 0; i < n; i++) {
+          const x = x0 + i * (w + gap), it = items[i];
+          if (!it) { emptySlot(ctx, x, y0, w, h, i + 1, B); continue; }
+          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 12; ctx.shadowOffsetX = 4;
+          ctx.fillStyle = '#000'; rr(ctx, x, y0, w, h, 5); ctx.fill(); ctx.restore();
+          drawSpine(ctx, x, y0, w, h, it.p, it.img, it.pal, it.logo);
+        }
+      },
+    },
+    tapes: {
+      W: 1600, H: 780,
+      draw(ctx, items, B) {
+        const cols = 5, gap = 30, w = (1600 - 160 - gap * (cols - 1)) / cols, h = w / 1.8, rowGap = 50;
+        for (let i = 0; i < MAX; i++) {
+          const c = i % cols, rI = Math.floor(i / cols), x = 80 + c * (w + gap), y = 230 + rI * (h + rowGap + 70), it = items[i];
+          if (!it) { emptySlot(ctx, x, y, w, h, i + 1, B, 10); continue; }
+          drawTape(ctx, x, y, w, h, it.p, it.img, it.pal, i + 1);
+          ctx.fillStyle = B.ink; ctx.font = '600 20px Inter, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+          let t = it.p.t; while (ctx.measureText(t).width > w && t.length > 3) t = t.slice(0, -2).trimEnd() + '…';
+          ctx.fillText(t, x, y + h + 14);
+          ctx.fillStyle = B.quiet; ctx.font = '400 16px Inter, sans-serif';
+          let by = [it.p.y, it.p.by].filter(Boolean).join(' · '); while (ctx.measureText(by).width > w && by.length > 3) by = by.slice(0, -2).trimEnd() + '…';
+          ctx.fillText(by, x, y + h + 40);
+        }
+      },
+    },
+    covers: {
+      W: 1600, H: 1180,
+      draw(ctx, items, B) {
+        const cols = 5, gap = 28, w = (1600 - 160 - gap * (cols - 1)) / cols, h = w * 1.5;
+        for (let i = 0; i < MAX; i++) {
+          const c = i % cols, rI = Math.floor(i / cols), x = 80 + c * (w + gap), y = 220 + rI * (h + 40), it = items[i];
+          if (!it) { emptySlot(ctx, x, y, w, h, i + 1, B, 10); continue; }
+          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 8;
+          rr(ctx, x, y, w, h, 10); ctx.fillStyle = css(it.pal.dark); ctx.fill(); ctx.restore();
+          ctx.save(); rr(ctx, x, y, w, h, 10); ctx.clip();
+          if (it.img) drawCover(ctx, it.img, x, y, w, h, .3);
+          else { ctx.fillStyle = css(it.pal.vivid); ctx.fillRect(x, y, w, h); drawLines(ctx, fit(ctx, it.p.t.toUpperCase(), FONTS[0].f, w * .8, h * .4), FONTS[0].f, x + w / 2, y + h / 2, '#fff'); }
+          ctx.restore();
+          badge(ctx, x + 30, y + 30, 20, i + 1);
+        }
+      },
+    },
+  };
+
+  /* ---------- one picture per movie, for posting ---------- */
+  const SINGLES = {
+    spines: { // just the spine, edge to edge: no wall, no shelf, square corners
+      W: 240, H: 1728, bare: true,
+      draw(ctx, it) { drawSpine(ctx, 0, 0, 240, 1728, it.p, it.img, it.pal, it.logo, 0); },
+    },
+    tapes: {
+      W: 1000, H: 640,
+      draw(ctx, it, rank) { drawTape(ctx, 70, 81, 860, 478, it.p, it.img, it.pal, rank); },
+    },
+    covers: {
+      W: 600, H: 900,
+      draw(ctx, it, rank) {
+        if (it.img) drawCover(ctx, it.img, 0, 0, 600, 900, .3);
+        else { ctx.fillStyle = css(it.pal.vivid); ctx.fillRect(0, 0, 600, 900); drawLines(ctx, fit(ctx, it.p.t.toUpperCase(), FONTS[0].f, 480, 360), FONTS[0].f, 300, 450, '#fff'); }
+        badge(ctx, 50, 50, 30, rank);
+      },
+    },
+  };
+
+  // a plain stored (uncompressed) zip: JPEGs don't shrink further, so this keeps it simple
+  const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(u8) { let c = ~0; for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 255] ^ (c >>> 8); return ~c >>> 0; }
+  async function makeZip(files) {
+    const local = [], central = []; let offset = 0;
+    for (const f of files) {
+      const data = new Uint8Array(await f.arrayBuffer()), name = new TextEncoder().encode(f.name), sum = crc32(data);
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(12, 0x21, true);
+      lh.setUint32(14, sum, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true); lh.setUint16(26, name.length, true);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(14, 0x21, true);
+      ch.setUint32(16, sum, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true); ch.setUint32(42, offset, true);
+      local.push(lh, name, data); central.push(ch, name);
+      offset += 30 + name.length + data.length;
+    }
+    const size = central.reduce((n, p) => n + p.byteLength, 0), end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, size, true); end.setUint32(16, offset, true);
+    return new Blob([...local, ...central, end], { type: 'application/zip' });
+  }
+  function saveBlob(blob, name) {
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: name });
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  }
+  async function singleFiles() {
+    await rendering;
+    const canvases = [...document.querySelectorAll('#singles canvas')];
+    return Promise.all(canvases.map((c, i) => new Promise((res, rej) => c.toBlob((b) => b
+      ? res(new File([b], `${String(i + 1).padStart(2, '0')}.png`, { type: 'image/png', lastModified: Date.now() }))
+      : rej(new Error('could not make picture ' + (i + 1))), 'image/png'))));
+  }
+
+  /* ---------- render ---------- */
+  let rendering = Promise.resolve();
+  function render() { rendering = paint(); return rendering; }
+  const fontsReady = Promise.all([
+    ...['Anton', 'Bebas Neue', 'Archivo Black', 'Permanent Marker'].map((f) => document.fonts.load(`40px "${f}"`)),
+    document.fonts.load('700 40px Oswald'), document.fonts.load('500 40px Oswald'), document.fonts.load('600 20px Inter'),
+  ]).catch(() => {});
+
+  let renderId = 0;
+  async function paint() {
+    const id = ++renderId;
+    await fontsReady;
+    // TMDB's full-size poster when we have it (Wikipedia's are often small), falling back to Wikipedia's
+    const art = (p) => p.hd || p.art;
+    const [imgs, logos] = await Promise.all([
+      Promise.all(L().picks.map(async (p) => (await loadImg(p.hd)) || loadImg(p.art))),
+      Promise.all(L().picks.map((p) => (state.useLogos && p.logo ? loadImg(p.logo) : null))),
+    ]);
+    if (id !== renderId) return;
+    const items = L().picks.map((p, i) => ({ p, img: imgs[i], logo: logos[i], pal: palette(imgs[i], art(p) || p.t) }));
+    const sc = SCENES[state.view], B = BACKDROPS[state.backdrop];
+    cv.width = sc.W; cv.height = sc.H;
+    const ctx = cv.getContext('2d');
+    background(ctx, sc.W, sc.H, B);
+    header(ctx, sc.W, B, items.length);
+    sc.draw(ctx, items, B);
+
+    const S = SINGLES[state.view];
+    $('#singles').replaceChildren(...items.map((it, i) => {
+      const c = document.createElement('canvas'); c.width = S.W; c.height = S.H;
+      const x = c.getContext('2d'); if (!S.bare) background(x, S.W, S.H, B); S.draw(x, it, i + 1, B);
+      return c;
+    }));
+    $('#post').disabled = !items.length;
+  }
+
+  /* ---------- UI ---------- */
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function renderPicks(lookup = true) {
+    const n = L().picks.length;
+    $('#count').textContent = n;
+    $('#pickhint').hidden = n > 0;
+    $('#pickswrap').hidden = n === 0;
+    $('#clear').disabled = n === 0;
+    const act = (a, i, label, title, off) => `<button type="button" class="linklike" data-act="${a}" data-i="${i}" title="${title}" ${off ? 'disabled' : ''}>${label}</button>`;
+    $('#picks').innerHTML = L().picks.map((p, i) => `
+      <tr>
+        <td class="num">${i + 1}</td>
+        <td>${esc(p.t)}</td>
+        <td class="num">${esc(p.y)}</td>
+        <td class="hide-narrow">${esc(p.by)}</td>
+        <td class="acts">
+          ${act('up', i, 'up', 'Move up', i === 0)}
+          ${act('down', i, 'down', 'Move down', i === n - 1)}
+          ${act('remove', i, 'remove', 'Remove from the list')}
+        </td>
+      </tr>`).join('');
+    renderResults();
+    save(); render();
+    if (lookup) ensureLogos();
+  }
+
+  /* ---------- title logos from TMDB ----------
+     The key is the user's own free TMDB key; it stays in this browser's storage and only goes to api.themoviedb.org. */
+  function tmdb(path, params = {}) {
+    const key = (state.tmdbKey || '').trim(), u = new URL('https://api.themoviedb.org/3' + path), headers = {};
+    Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
+    if (key.startsWith('eyJ')) headers.Authorization = 'Bearer ' + key; // a "read access token"
+    else u.searchParams.set('api_key', key); // a short "API key"
+    return fetch(u, { headers }).then((r) => {
+      if (r.status === 401) throw Object.assign(new Error('bad key'), { badKey: true });
+      if (!r.ok) throw new Error('TMDB ' + r.status);
+      return r.json();
+    });
+  }
+  // the film's title logo and a full-size poster, both at TMDB's original resolution, so every picture is equally sharp
+  const TMDB_IMG = 'https://image.tmdb.org/t/p/original';
+  function bestLogo(list) { // English first, then raster over SVG, then the most liked
+    const logos = (list || []).slice().sort((a, b) =>
+      (b.iso_639_1 === 'en') - (a.iso_639_1 === 'en') ||
+      (!b.file_path.endsWith('.svg')) - (!a.file_path.endsWith('.svg')) ||
+      (b.vote_average || 0) - (a.vote_average || 0));
+    return logos.length ? TMDB_IMG + logos[0].file_path : '';
+  }
+  async function findTmdb(p) {
+    if (p.kind === 'tv') return findShow(p);
+    let res = await tmdb('/search/movie', { query: p.t, ...(p.y && { primary_release_year: p.y }) });
+    let m = res.results && res.results[0];
+    if (!m && p.y) { res = await tmdb('/search/movie', { query: p.t }); m = res.results && res.results[0]; }
+    if (!m) return { logo: '', hd: '' };
+    const im = await tmdb(`/movie/${m.id}/images`, { include_image_language: 'en,null' });
+    return { logo: bestLogo(im.logos), hd: m.poster_path ? TMDB_IMG + m.poster_path : '' };
+  }
+  // a show's logo and poster, plus its network and the years it ran (e.g. 2008–2013, or 2019– if still going)
+  async function findShow(p) {
+    let id = p.tmdb;
+    if (!id) {
+      const first = (p.y || '').slice(0, 4);
+      let res = await tmdb('/search/tv', { query: p.t, ...(first && { first_air_date_year: first }) });
+      if (!(res.results || []).length && first) res = await tmdb('/search/tv', { query: p.t });
+      id = res.results && res.results[0] && res.results[0].id;
+    }
+    if (!id) return { logo: '', hd: '' };
+    const d = await tmdb(`/tv/${id}`, { append_to_response: 'images', include_image_language: 'en,null' });
+    const start = (d.first_air_date || '').slice(0, 4), end = (d.last_air_date || '').slice(0, 4);
+    const going = d.status === 'Returning Series' || d.status === 'In Production';
+    const y = !start ? p.y : going ? `${start}–` : end && end !== start ? `${start}–${end}` : start;
+    const by = (d.networks && d.networks[0] && d.networks[0].name) || p.by || '';
+    return { tmdb: id, logo: bestLogo(d.images && d.images.logos), hd: d.poster_path ? TMDB_IMG + d.poster_path : '', y, by };
+  }
+  // only speaks up when something is wrong with the logo lookup
+  function logoStatus(msg) { $('#logostatus').textContent = msg || ''; }
+  let logoBusy = false, logoAgain = false;
+  async function ensureLogos() {
+    if (!state.useLogos || !state.tmdbKey) { logoStatus(); return; }
+    if (logoBusy) { logoAgain = true; return; }
+    const todo = L().picks.filter((p) => p.logo === undefined || p.hd === undefined);
+    if (!todo.length) { logoStatus(); return; }
+    logoBusy = true;
+    let failed = '';
+    for (const p of todo) {
+      try { Object.assign(p, await findTmdb(p)); }
+      catch (e) { failed = e.badKey ? (CONFIG_KEY ? 'TMDB did not accept the key in config.js. Check it there.' : 'TMDB did not accept the saved key. Put your key in config.js.') : 'Could not reach TMDB. Try again later.'; break; }
+    }
+    logoBusy = false;
+    renderPicks(false);
+    logoStatus(failed);
+    if (logoAgain && !failed) { logoAgain = false; ensureLogos(); }
+  }
+
+  let lastResults = [];
+  function renderResults() {
+    const full = L().picks.length >= MAX;
+    $('#resultswrap').hidden = lastResults.length === 0;
+    $('#results').innerHTML = lastResults.map((m, i) => {
+      const have = L().picks.some((p) => p.id === m.id);
+      return `<tr>
+        <td>${esc(m.t)}</td>
+        <td class="num">${esc(m.y)}</td>
+        <td class="hide-narrow">${esc(m.by)}</td>
+        <td class="acts"><button type="button" class="linklike" data-add="${i}" ${have || full ? 'disabled' : ''}>${have ? 'added' : full ? 'list full' : 'add'}</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  $('#picks').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const i = +b.dataset.i, P = L().picks;
+    if (b.dataset.act === 'up' && i > 0) [P[i - 1], P[i]] = [P[i], P[i - 1]];
+    if (b.dataset.act === 'down' && i < P.length - 1) [P[i + 1], P[i]] = [P[i], P[i + 1]];
+    if (b.dataset.act === 'remove') P.splice(i, 1);
+    renderPicks();
+  });
+  $('#results').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-add]'); if (!b || L().picks.length >= MAX) return;
+    L().picks.push({ ...lastResults[+b.dataset.add] });
+    renderPicks();
+  });
+
+  let timer, seq = 0;
+  $('#q').addEventListener('input', (e) => {
+    clearTimeout(timer);
+    const q = e.target.value.trim();
+    if (!q) { lastResults = []; renderResults(); $('#status').textContent = ''; return; }
+    timer = setTimeout(async () => {
+      const my = ++seq; $('#status').textContent = 'Searching…';
+      try {
+        const res = await search(q); if (my !== seq) return;
+        lastResults = res; $('#status').textContent = res.length ? '' : K().none;
+      } catch (err) { if (my === seq) $('#status').textContent = 'Search failed. Check your connection.'; }
+      renderResults();
+    }, 350);
+  });
+
+  $('#title').value = L().title;
+  $('#title').addEventListener('input', (e) => { L().title = e.target.value; save(); render(); });
+
+  $('#clear').addEventListener('click', () => { if (!L().picks.length || confirm('Clear your list?')) { L().picks = []; renderPicks(); } });
+
+  function syncTabs() {
+    document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.view === state.view));
+    document.querySelectorAll('[data-kind]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.kind === state.kind));
+  }
+  // fill in the wording and fields for whichever list is showing
+  function applyKind() {
+    const k = K();
+    $('#qlabel').textContent = k.add; $('#q').placeholder = k.eg; $('#pickhint').textContent = k.hint;
+    document.querySelectorAll('.bycol').forEach((th) => { th.textContent = k.by; });
+    $('#title').value = L().title; $('#caption').value = L().caption;
+    $('#q').value = ''; lastResults = []; $('#status').textContent = ''; $('#poststatus').textContent = '';
+  }
+  document.querySelectorAll('[data-kind]').forEach((b) => b.addEventListener('click', () => {
+    if (state.kind === b.dataset.kind) return;
+    state.kind = b.dataset.kind; applyKind(); syncTabs(); renderPicks();
+  }));
+
+  /* ---------- post to X ----------
+     No website can attach pictures to an X post by itself. On a phone the share sheet hands the
+     pictures to the X app; on a computer we save them as a zip and open X's composer with the caption. */
+  $('#caption').value = L().caption;
+  $('#caption').addEventListener('input', (e) => { L().caption = e.target.value; save(); });
+  $('#post').addEventListener('click', async () => {
+    if (!L().picks.length) return;
+    const text = $('#caption').value.trim(), status = $('#poststatus'), btn = $('#post');
+    let viaShare = false;
+    try {
+      viaShare = matchMedia('(pointer: coarse)').matches && !!navigator.canShare &&
+        navigator.canShare({ files: [new File([new Uint8Array(1)], 't.jpg', { type: 'image/jpeg' })] });
+    } catch (e) {}
+    // open X first, while the click still counts, so the popup isn't blocked
+    if (!viaShare) window.open('https://x.com/intent/post?text=' + encodeURIComponent(text), '_blank', 'noopener');
+    btn.disabled = true; status.textContent = 'Making pictures…';
+    try {
+      const files = await singleFiles();
+      if (viaShare) {
+        await navigator.share({ files, ...(text && { text }) });
+        status.textContent = 'Shared.';
+      } else {
+        const name = `top-${files.length}-${K().file}-${state.view}.zip`;
+        saveBlob(await makeZip(files), name);
+        status.textContent = `Saved ${name} and opened X in a new tab. Unzip it, then drag all ${files.length} pictures into the post, 01 first.`;
+      }
+    } catch (e) {
+      if (e.name !== 'AbortError') status.textContent = 'Could not make the pictures: ' + e.message;
+    }
+    btn.disabled = false;
+  });
+  document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => { state.view = b.dataset.view; syncTabs(); save(); render(); }));
+
+  $('#download').addEventListener('click', () => {
+    try {
+      cv.toBlob((blob) => {
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `top10-${K().file}-${state.view}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      }, 'image/png');
+    } catch (e) { alert('This image cannot be saved because a poster blocked cross-site use.'); }
+  });
+
+  // ?view=tapes picks a view, ?list=tv opens the TV list
+  const qs = new URLSearchParams(location.search);
+  if (SCENES[qs.get('view')]) state.view = qs.get('view');
+  if (KINDS[qs.get('list')]) state.kind = qs.get('list');
+  applyKind(); syncTabs();
+  renderPicks();
+})();
+</script>
+</body>
+</html>
